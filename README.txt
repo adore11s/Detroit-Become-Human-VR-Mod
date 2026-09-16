@@ -32,12 +32,23 @@ HOW TO INSTALL
      up with:
          ...\Detroit Become Human\DETROIT_VR_MOD\
 
-  3. Start SteamVR, put the headset on, and check that it is tracking.
+  3. Before starting the game, set these in-game video settings:
+       VSync                     Off
+       Bloom                     Off
+       Motion Blur               Off
+       Depth of Field            Low
+       Screen Space Reflections  Off
+       Ambient Occlusion         Off
+       Display Mode              Windowed
 
-  4. Open the DETROIT_VR_MOD folder and run:
+     Do not change Resolution Scale. Changing it can break the game.
+
+  4. Start SteamVR, put the headset on, and check that it is tracking.
+
+  5. Open the DETROIT_VR_MOD folder and run:
          Play Detroit in VR.cmd
 
-  5. Press a key when it asks. The game starts in your headset.
+  6. Press a key when it asks. The game starts in your headset.
 
   A "Detroit VR" shortcut is placed on your desktop, so next time you can just
   use that.
