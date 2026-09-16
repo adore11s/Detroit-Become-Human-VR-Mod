@@ -1,0 +1,13 @@
+{
+  "runtime": "SteamVR/OpenXR",
+  "rendering_method": "mono",
+  "world_scale": 1.0,
+  "ipd_meters": 0.064,
+  "near_clip_meters": 0.05,
+  "far_clip_meters": 500.0,
+  "head_translation_meters": [0.0, 0.0, 0.0],
+  "head_rotation_degrees": [0.0, 0.0, 0.0],
+  "comfort_vignette": true,
+  "cinema_distance_meters": 2.5,
+  "enabled": true
+}

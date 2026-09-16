@@ -1,0 +1,226 @@
+# Detroit VR panel settings. Written by the in-headset panel.
+# The panel's own rows apply at once. This file is read when the game starts,
+# so an edit made here while the game runs takes effect at the next start
+# (and is overwritten if the panel saves first).
+rendering_method=mono
+controller_input=playstation
+# Camera position offset in centimetres (-300..300): side is +right,
+# height is +up, forward is +forward. Set from the panel's first three rows.
+camera_side_cm=0
+camera_height_cm=0
+camera_forward_cm=33
+gameplay_camera=third
+cutscene_camera=third
+turning_method=smooth
+turn_speed_percent=0
+snap_angle_percent=0
+# Cutscene size, -100..100 around a 55 degree default width.
+cinema_screen_percent=50
+# Cutscene screen: fixed (default) = stays where it appeared when the cutscene
+# started, follow = eases back in front of you. Not on the VR panel.
+cinema_screen_placement=fixed
+# Milliseconds of no drawing before the cutscene screen appears. Lower is
+# quicker but flickers, because ordinary play briefly goes quiet too.
+cinema_switch_delay_ms=800
+# Milliseconds of unbroken 3D scene before leaving the cutscene screen. 0
+# leaves on the first scene frame, which can flick a starting cutscene back.
+cinema_exit_hold_ms=100
+# Milliseconds of completely flat frames (loading black, first frames) before
+# moving to the cutscene screen, instead of the switch delay.
+cinema_fast_enter_ms=50
+# Draws per frame below which a black or near-empty frame is completely flat.
+cinema_flat_draw_threshold=30
+# With the game's black screen up, descriptor binds per frame below which the
+# frame is not a 3D scene (loading, fades, intro). Unused otherwise.
+cinema_draw_threshold=200
+# Queue submits per frame at or below which a frame is not a 3D scene.
+cinema_submit_threshold=7
+# Seconds of per-second scene/motion profiling; 0 means never stop.
+scene_profile_seconds=0
+# Milliseconds at which one slow frame is logged with its stage breakdown.
+spike_threshold_ms=18
+# Submit frames the engine rendered without asking us for a camera,
+# instead of dropping them and letting the compositor reproject.
+submit_untracked_presents=off
+# Turn Detroit's temporal anti-aliasing off while AFR runs.
+afr_disable_antialiasing=on
+# Read the pass constant buffer once a second and report whether the
+# per-eye correction can be delivered through it. Diagnostic only; it
+# installs three Vulkan hooks that are otherwise bypassed.
+stereo_pass_buffer_probe=off
+stereo_pass_buffer_write=off
+# Multiview device feature. Required before any shader may declare
+# gl_ViewIndex; on its own it changes nothing.
+stereo_multiview=on
+# Run the engine's draws twice, once per eye. Needs stereo_multiview,
+# which gives the scene's attachments the second layer to render into.
+stereo_render_graph=on
+stereo_native_composite=on
+stereo_own_descriptor=on
+stereo_composite_flip_x=off
+stereo_composite_flip_y=off
+# Count what the shader patch WOULD do, substituting nothing.
+stereo_shader_patch_dry_run=off
+# Publish identity corrections. Leave ON the first time the patch goes
+# live: the frame stays pixel-identical to mono, so the run tests whether
+# our SPIR-V compiles rather than whether the matrices are right.
+stereo_correction_identity=off
+# THE LIVE SWITCH. Substitutes patched shader modules. Refused unless
+# stereo_multiview and stereo_pass_buffer_write are also on.
+stereo_shader_patch=on
+# Substitute at most this many patched modules (0 = all). A small number
+# makes a run a bisection step instead of an all-or-nothing gamble.
+stereo_shader_patch_limit=0
+# Emit the scalar validation patch (position * 1.0) rather than the real
+# per-eye one. On is the only shader code proven to survive the driver.
+# Off with stereo_correction_identity still on is the middle rung: real
+# shader code, identity data, no visual change.
+stereo_shader_patch_validation_only=off
+# Index the correction with a constant 0 rather than gl_ViewIndex.
+# Reading ViewIndex in a render pass whose viewMask is 0 is UNDEFINED,
+# and render-pass multiview does not exist yet. Leave on until it does.
+stereo_shader_patch_eye_zero=off
+# Address _mJitteredProjection (offset 1280) rather than
+# _mNoJitterProjection (1408). Identical shape, but the engine's own
+# shaders read the first and never the second - a discriminator for why
+# reading the block crashes the driver.
+stereo_correction_use_jittered_slot=off
+# The flat in-game UI is drawn into a centred box this size, as a
+# percentage of the frame - the part of it the lenses actually show.
+# Measured by eye, not derived: raise until text is clipped, then back off.
+# 0 on either axis leaves the engine's own full-frame layout alone.
+hud_box_width_percent=42
+hud_box_height_percent=52
+# Off leaves the Vulkan draw hooks uninstalled entirely. Read at launch.
+hud_box_hooks=on
+# Quad layer step 2: render the interface into our own image. With no
+# composite step yet, on makes the HUD vanish - that is the proof it works.
+ui_quad_substitute=off
+# Fit UI draws that never set a viewport of their own, so a line of text
+# cannot end up half fitted and half not.
+hud_box_consistent_fit=off
+# Shader fingerprints of the ONLY interface pipelines the box fits (menus,
+# subtitles, tutorials, reconstruction). Everything else stays 3D.
+# none = every interface pipeline is eligible. The log marks each one
+# [boxed] or [left in 3D].
+hud_box_only_fingerprints=0333c9e376e1f859,16d922379b847237,1a13f0c5ade02e9c,1cf42e6d6ace719f,3a85a7c1a3710a2f,3c90f90af7df2046,407596e5a01dc26e,4659788345b721f0,589d3986f3fd9b36,7ec311c7a3ba337d,85abba893d6ea0e4,8f2337fbe2074f87,92b69c131a25da80,9a38267ec295f78e,a287bd7a20436b8c,a95e9ee9493f8bb0,ac3dd1fa067cdffb,b76e2cc16a75a947,bb35f5d2c82ae5d3,c2654e94e24dd354,d89d3eaf8186daa8,e04c6c36da5407c1,ebdbb7443e68233c,efa414effcb174f2,fa363f5014be905f,fbe061b437a97ff9
+# Diagnostic: log whether each interface draw carries a perspective (camera)
+# matrix. Reads game memory; leave off unless collecting that log.
+hud_box_inspect_ubo=off
+# Diagnostic: log the game-code call stack behind each interface draw path.
+hud_box_stack_census=off
+# Leave the game's world-anchored UI layer (prompts, name plates, objectives)
+# in 3D instead of squeezing it into the HUD box.
+hud_box_layer0_in_3d=on
+# Inspection / reconstruction cursor: on = it sits where you look (centre of
+# the view); off = moved with the right stick as in the flat game.
+gaze_selection_cursor=on
+# Dialogue choices (SELF SACRIFICE, TALK? ...) as a percentage of the game's
+# own size, 50..400. 200 = twice as big, 100 = unchanged.
+dialog_choice_size_percent=200
+# In-world action prompts (KNEEL DOWN ...) as a percentage of the game's
+# size, 50..300. 150 = one and a half times. Applies to new prompts.
+prompt_screen_size_percent=150
+# The black screen behind the date / time title card full screen instead of
+# boxed. The card's text stays in the box.
+hud_box_title_cards_in_3d=on
+# Interface pipelines the box must not touch - the subtitles and their
+# punctuation. Comma separated, blank or -1 for none.
+hud_box_exclude_pipelines=-1
+# In-world prompt / UI quad size. 300 = the long-standing 3x; 100 = the
+# engine's own size, which also disables the quad scaling entirely.
+prompt_size_percent=100
+# How far characters keep their eyes and full detail, as a percentage of
+# what the game's Model quality gives. 100 = the game; 200 = twice as far.
+# 10..1000. Higher costs GPU time; below 100 is lower detail than the game.
+model_detail_distance_percent=50
+# Build the declared frustum from the submitted eye buffer rather than
+# from the aspect Detroit reports. off = the old behaviour exactly.
+fov_aspect_from_buffer=on
+# Which viewport call site gets the box - see the census in the log.
+# -1 measures without changing anything.
+hud_box_site=-1
+# Shrink the flat HUD to this percentage of the frame. The scene is
+# left alone. 0 = the engine's own layout.
+hud_safe_area_percent=0
+# Step through every candidate viewport pass, three seconds each.
+hud_box_sweep=off
+# Also drop volumetric lighting and screen-space reflections while AFR runs.
+# Unproven, and it coincided with AFR going stale - leave off unless testing it.
+afr_disable_temporal_effects=off
+# Milliseconds after the first tracked frame at which the headset
+# recenters itself once. 0 disables it; F6 still works at any time.
+auto_recenter_ms=15000
+# Diagnostic. Set to off to disable the second camera hook at RVA 16aad7.
+headset_culling_hook=on
+# Skip drawing what the headset lenses cannot show (the game renders a wider
+# 16:9 frame).
+headset_view_culling=on
+# Degrees of view kept on every side, so fast turns do not reveal culled edges.
+headset_view_culling_margin_degrees=5
+# Demo, not for play: above 0, only a window this many degrees each side of
+# straight ahead is drawn, so you can watch objects vanish as you look away.
+headset_view_culling_demo_degrees=0
+# Measurement: cycles the culling window (engine, lens +10/+5/+2/+0 degrees)
+# and logs draws and frame time for each, then returns to the above.
+headset_view_culling_sweep=off
+# Keep pipelines the game destroys and reuse them when it asks for identical
+# ones, so re-entering an area does not re-create them. Read at launch.
+pipeline_recycling=on
+# Wait for each VR image copy to finish inside the game's present (the old
+# behaviour). Off lets the game start its next frame while the GPU catches up.
+vr_copy_wait=off
+# Once-a-second diagnostic census in the log. On costs a hitch every second.
+# Read at launch.
+verbose_diagnostics=off
+# Diagnostic. Set to on for a head-locked cinema panel, not full-FOV VR.
+head_locked_layer=off
+# Legacy key; full render-time translation is always submitted.
+layer_pose_translation=off
+# Compositor frames of lead on the predicted display time.
+# 'auto' measures it from the real submit latency; 0-3 forces a value.
+display_time_lead=auto
+# Legacy key; the captured rendering pose is always submitted.
+runtime_reprojection=off
+# Diagnostic. On ignores the headset and feeds a smooth generated yaw sweep.
+synthetic_head_motion=off
+# Diagnostic: rotate the pose we DECLARE without moving the camera the
+# image was rendered from. Anything but 0 visibly shifts the world.
+diagnostic_layer_yaw_degrees=0
+# VR frames per display period. 2 locks to half the headset rate for a
+# stable cadence; 1 submits on every game frame as before.
+submission_period_multiple=1
+# Off declares the head-centre pose for both eyes, as before.
+per_eye_layer_pose=on
+# Detroit's handheld-camera noise. Off restores the game's own camera shake.
+suppress_camera_noise=on
+# Detroit's swapchain is created FIFO (vsync) even though its own VSYNC
+# setting is false, so present blocks on the DESKTOP vblank - a second clock
+# beating against the compositor. On forces IMMEDIATE so only xrWaitFrame paces.
+disable_game_vsync=on
+# Frames the engine lags behind our injected camera. The layer declares the
+# pose from this many frames ago, so timewarp corrects from the pose the
+# pixels were really rendered with. Try 0, then 1, then 2. 0 = as before.
+declared_pose_frame_lag=1
+# Hold the game's present while the headset paces the next frame. On = one game
+# frame per headset frame, but stutters. Read at launch.
+pace_presents=off
+# Declare the pose the engine had at the previous present (on) or the pose
+# declared_pose_frame_lag headset frames back (off). Read at launch.
+present_anchored_pose=on
+# Declare each frame with the camera read back from the pass buffer. Read at launch.
+measured_pose=on
+# Diagnostic: measure the rendered camera without using it. Read at launch.
+pose_readback=on
+# Mono: the second camera call re-applies the first. Read at launch.
+camera_repeat_mono=off
+# Declare each frame with the camera its command buffers were recorded under. Read at launch.
+camera_tag_pose=on
+# Fit the picture to the window's own shape instead of 16:9 (no black bars). Read at launch.
+render_fills_window=on
+# Give the headset each eye's depth with the picture, so it can reproject by depth. Read at launch.
+submit_depth=on
+# How far away the flat HUD appears in stereo, centimetres (0 = infinitely far). Read at launch.
+hud_depth_cm=200
+# While the cinema screen shows, keep Detroit's camera still instead of following the head.
+cinema_holds_camera=on
