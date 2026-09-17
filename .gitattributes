@@ -1,0 +1,13 @@
+# cmd.exe resolves GOTO by seeking to a byte offset, so a .cmd checked out with
+# LF endings can jump to the wrong place - and both scripts here use labels.
+# Forcing CRLF makes that independent of whoever clones and of their settings,
+# including in the ZIP GitHub builds from this repository.
+*.cmd text eol=crlf
+
+*.md   text eol=lf
+*.txt  text eol=lf
+*.json text eol=lf
+
+*.dll binary
+*.exe binary
+*.bin binary

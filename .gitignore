@@ -1,0 +1,21 @@
+# Everything here is made while playing. None of it belongs in a release: the log
+# and the caches are large, the flags change behaviour, and vr_panel_settings.txt
+# is the one file a player edits - the copy that ships holds the defaults.
+
+# The author's log and the flag that turns it on
+detroit_vr_debug.log
+profiles/debug_log.flag
+
+# Diagnostic flags, all opt-in and all local
+profiles/*.flag
+
+# Compiled stereo pipelines: tens of MB, and specific to one GPU and driver
+profiles/stereo_pipeline_cache.bin
+profiles/stereo_pipeline_cache.bin.writing
+
+# Written by the launcher on a Steam copy, removed by the uninstaller
+steam_appid.created
+
+# Crash reports, and the config backup taken before the frame cap is changed
+crash_reports/
+*.vrmod-backup

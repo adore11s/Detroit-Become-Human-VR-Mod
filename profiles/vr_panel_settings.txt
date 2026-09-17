@@ -8,7 +8,7 @@ controller_input=playstation
 # height is +up, forward is +forward. Set from the panel's first three rows.
 camera_side_cm=0
 camera_height_cm=0
-camera_forward_cm=33
+camera_forward_cm=12
 gameplay_camera=third
 cutscene_camera=third
 turning_method=smooth

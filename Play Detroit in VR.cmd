@@ -22,12 +22,7 @@ rem  At the menu's 30 the frame interval measures a pinned 33.3 ms and SteamVR
 rem  shows a solid red graph. 2 (90 fps) matches a 90 Hz headset.
 set FPS_CAP_INDEX=2
 
-rem --- desktop shortcut ------------------------------------------------------
-rem  Creates (or refreshes) a "Detroit VR" shortcut on your desktop pointing at
-rem  this launcher, using the game's own icon. Set to 0 if you would rather not
-rem  have one. The uninstaller removes it either way.
-set CREATE_SHORTCUT=1
-
+rem --- keeping the cap once it is set -----------------------------------------
 rem  Detroit rewrites its config whenever you open the video menu, which would
 rem  put the cap back. With this on, the config is made read-only so the menu
 rem  cannot. NOTE: while it is on, the game cannot save ANY graphics option -
@@ -45,16 +40,20 @@ rem  "%~dp0.." would read as "...\DETROIT_VR_MOD\.." everywhere it is printed,
 rem  so it is expanded to a real absolute path first.
 for %%I in ("%~dp0..") do set "GAME_DIR=%%~fI"
 
-if not exist "%GAME_DIR%\DetroitBecomeHuman.exe" (
-  echo   [X] DetroitBecomeHuman.exe was not found in:
-  echo       %GAME_DIR%
-  echo(
-  echo   Move the whole DETROIT_VR_MOD folder INTO your Detroit game folder -
-  echo   the one that contains DetroitBecomeHuman.exe - and run this again.
-  echo(
-  pause
-  exit /b 1
-)
+rem  Not written as an  if ... ( ... )  block: GAME_DIR is echoed unquoted, and a
+rem  game folder under "C:\Program Files (x86)" puts a ")" into the block while
+rem  cmd is still parsing it, which closes the block early and kills the script
+rem  with "... was unexpected at this time" - whether or not the branch is taken.
+if exist "%GAME_DIR%\DetroitBecomeHuman.exe" goto :gamefound
+echo   [X] DetroitBecomeHuman.exe was not found in:
+echo       %GAME_DIR%
+echo(
+echo   Move the whole DETROIT_VR_MOD folder INTO your Detroit game folder -
+echo   the one that contains DetroitBecomeHuman.exe - and run this again.
+echo(
+pause
+exit /b 1
+:gamefound
 
 if not exist "%~dp0detroit_vr_launcher.exe" (
   echo   [X] detroit_vr_launcher.exe is missing from this folder.
@@ -66,8 +65,51 @@ if not exist "%~dp0detroit_vr_launcher.exe" (
 
 echo   Game folder: %GAME_DIR%
 set "CFG=%GAME_DIR%\GraphicOptions.JSON"
+set "MOD_DIR=%~dp0."
 
-rem --- 2. frame cap -----------------------------------------------------------
+rem --- 2. Steam's app id ------------------------------------------------------
+rem  A Steam copy launched directly, rather than from Steam, has no idea which app
+rem  it is. Retail is wrapped in Steam's DRM stub and reacts by asking Steam to
+rem  start the game AGAIN - a second process, without the mod in it - and quietly
+rem  exits, so the game runs flat while the mod reports a perfect start-up in a
+rem  process that is already gone. The demo is not wrapped and fails outright with
+rem  "Steam must be running to play this game (SteamAPI_Init() failed)".
+rem
+rem  steam_appid.txt next to the exe answers the question and both stop. The id is
+rem  read out of Steam's own appmanifest for this folder, so it is right for retail,
+rem  for the demo, and for any library folder on any drive - nothing is hardcoded.
+rem  Epic copies have no steam_api64.dll and are skipped; they need none of this.
+if not exist "%GAME_DIR%\steam_api64.dll" goto :appid_done
+if exist "%GAME_DIR%\steam_appid.txt" goto :appid_done
+rem  The .acf is read by splitting on the quote character rather than matching a
+rem  pattern against it: a literal \" inside this block unbalances the quotes cmd
+rem  counts while joining the ^ continuations, and the whole command is then lost
+rem  without a word of complaint.
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$game = $env:GAME_DIR;" ^
+  "$common = Split-Path $game -Parent;" ^
+  "if ((Split-Path $common -Leaf) -ne 'common') { Write-Host '   [!] Steam app id: not inside a Steam library - skipped'; exit }" ^
+  "$steamapps = Split-Path $common -Parent;" ^
+  "$dir = Split-Path $game -Leaf;" ^
+  "$id = $null;" ^
+  "foreach ($m in Get-ChildItem -LiteralPath $steamapps -Filter 'appmanifest_*.acf' -ErrorAction SilentlyContinue) {" ^
+  "  $raw = Get-Content -LiteralPath $m.FullName -Raw -ErrorAction SilentlyContinue;" ^
+  "  if (-not $raw) { continue }" ^
+  "  $p = $raw.Split([char]34); $found = ''; $app = '';" ^
+  "  for ($i = 0; $i -lt $p.Length - 2; $i++) {" ^
+  "    if ($p[$i] -eq 'installdir') { $found = $p[$i+2] }" ^
+  "    if ($p[$i] -eq 'appid') { $app = $p[$i+2] } }" ^
+  "  if ($found -eq $dir -and $app -match '^[0-9]+$') { $id = $app; break } }" ^
+  "if (-not $id) { Write-Host '   [!] Steam app id: no appmanifest matched this folder - skipped'; exit }" ^
+  "$out = Join-Path $game 'steam_appid.txt';" ^
+  "[IO.File]::WriteAllText($out, $id, (New-Object Text.UTF8Encoding $false));" ^
+  "if (Test-Path -LiteralPath $out) {" ^
+  "  New-Item -ItemType File -Path (Join-Path $env:MOD_DIR 'steam_appid.created') -Force | Out-Null;" ^
+  "  Write-Host ('   Steam app id ' + $id + ' written to steam_appid.txt, so the game stays in this process') }" ^
+  "else { Write-Host '   [!] Steam app id: could not write steam_appid.txt - skipped' }"
+:appid_done
+
+rem --- 3. frame cap -----------------------------------------------------------
 if exist "%CFG%" (
   call :applycap
 ) else (
@@ -90,36 +132,6 @@ if exist "%CFG%" (
   pause
 )
 
-rem --- 3. desktop shortcut ----------------------------------------------------
-if not "%CREATE_SHORTCUT%"=="1" goto :launch
-set "LNK_TARGET=%~dp0Play Detroit in VR.cmd"
-set "LNK_WORKDIR=%~dp0"
-set "LNK_ICON=%GAME_DIR%\DetroitBecomeHuman.exe"
-rem  The shortcut is built in TEMP and then copied, never saved straight to the
-rem  desktop. WScript.Shell's Save() writes nothing - and throws nothing - when
-rem  the destination path contains characters outside the system ANSI codepage,
-rem  which is exactly what a localised OneDrive desktop looks like. Copy-Item
-rem  -LiteralPath handles Unicode properly.
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$desk = [Environment]::GetFolderPath('Desktop');" ^
-  "if (-not $desk -or -not (Test-Path -LiteralPath $desk)) { Write-Host '   [!] Desktop folder not found - shortcut skipped'; exit }" ^
-  "$lnk = Join-Path $desk 'Detroit VR.lnk';" ^
-  "$existed = Test-Path -LiteralPath $lnk;" ^
-  "$tmp = Join-Path $env:TEMP 'DetroitVR.lnk';" ^
-  "if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -Force }" ^
-  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut($tmp);" ^
-  "$s.TargetPath = $env:LNK_TARGET;" ^
-  "$s.WorkingDirectory = $env:LNK_WORKDIR;" ^
-  "if (Test-Path -LiteralPath $env:LNK_ICON) { $s.IconLocation = ($env:LNK_ICON + ',0') }" ^
-  "$s.Description = 'Play Detroit: Become Human in VR';" ^
-  "$s.Save();" ^
-  "if (-not (Test-Path -LiteralPath $tmp)) { Write-Host '   [!] Could not build the shortcut - skipped'; exit }" ^
-  "Copy-Item -LiteralPath $tmp -Destination $lnk -Force;" ^
-  "Remove-Item -LiteralPath $tmp -Force;" ^
-  "if (Test-Path -LiteralPath $lnk) { if ($existed) { Write-Host '   Desktop shortcut refreshed: Detroit VR' } else { Write-Host '   Desktop shortcut created: Detroit VR' } }" ^
-  "else { Write-Host '   [!] Desktop shortcut could not be written - skipped' }"
-
-:launch
 echo(
 echo   Before continuing:
 echo     - start SteamVR ^(or your OpenXR runtime^) and put the headset on
@@ -144,15 +156,31 @@ if exist "%CFG%" (
   call :applycap
 )
 
-if not "%LAUNCH_RESULT%"=="0" (
-  echo(
-  echo   The launcher reported a problem.
-  echo(
-  echo   There is no log unless you ask for one. To capture what happened,
-  echo   create an empty file named  profiles\debug_log.flag  and run this
-  echo   again; detroit_vr_debug.log then appears next to this file.
-  echo   Delete the flag afterwards - the log grows large.
-)
+rem  detroit_vr_launcher.exe hands back whatever Detroit itself exited with, so a
+rem  non-zero code is normally just how the game ends and says nothing about the
+rem  mod. Only 1-5 are the launcher's own, and in every one of those it never got
+rem  the game running at all - those are the ones worth a log.
+rem  Detroit's own quit code is 53, not 0, so anything outside 1-5 is a normal
+rem  session and is passed over in silence.
+if "%LAUNCH_RESULT%"=="0" goto :finished
+if %LAUNCH_RESULT% LSS 1 goto :finished
+if %LAUNCH_RESULT% GTR 5 goto :finished
+
+echo(
+echo   The VR launcher could not start the game ^(error %LAUNCH_RESULT%^).
+echo(
+if exist "%~dp0profiles\debug_log.flag" goto :haselog
+echo   There is no log unless you ask for one. To capture what happened,
+echo   create an empty file named  profiles\debug_log.flag  and run this
+echo   again; detroit_vr_debug.log then appears next to this file.
+goto :finished
+
+:haselog
+echo   Logging is already on, so the details are in:
+echo       detroit_vr_debug.log
+echo   Delete profiles\debug_log.flag afterwards - the log grows large.
+
+:finished
 echo(
 pause
 endlocal
