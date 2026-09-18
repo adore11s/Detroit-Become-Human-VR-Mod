@@ -2,7 +2,7 @@
 # The panel's own rows apply at once. This file is read when the game starts,
 # so an edit made here while the game runs takes effect at the next start
 # (and is overwritten if the panel saves first).
-rendering_method=mono
+rendering_method=stereo
 controller_input=playstation
 # Camera position offset in centimetres (-300..300): side is +right,
 # height is +up, forward is +forward. Set from the panel's first three rows.
