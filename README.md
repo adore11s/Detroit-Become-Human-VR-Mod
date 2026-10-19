@@ -4,9 +4,9 @@ Play **Detroit: Become Human** on a VR headset with 6DOF head tracking.
 Cutscenes play on a large flat screen, and the game's flat interface is fitted
 into the part of the view the lenses actually show.
 
-> ### ⚠️ Work in progress — not finished
+> ### ⚠️ MOD DEVELOPMNET HALTED
 > This is an unfinished, work-in-progress VR mod. It is not a polished release.
-> It is shared so people can play with it and help improve it.
+> As of right now you will experience crashes.
 
 ---
 
